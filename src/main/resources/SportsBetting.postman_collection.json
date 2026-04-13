@@ -1,0 +1,243 @@
+{
+  "info": {
+    "name": "Sports Betting Settlement Service",
+    "description": "API collection for the Sports Betting Settlement Trigger Service. Run docker-compose up -d and start the Spring Boot app on port 8081 before using.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Publish Event Outcome",
+      "item": [
+        {
+          "name": "Settle event-1 — team-1 wins (Chelsea)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/outcome",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "outcome"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"event-1\",\n  \"eventName\": \"Chelsea vs Arsenal\",\n  \"eventWinnerId\": \"team-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Publishes event-1 outcome to Kafka with team-1 as winner.\n\nExpected result:\n- bet-001 (user-1, team-1) → WON, payout = $95.00\n- bet-002 (user-2, team-2) → LOST, no payout\n- bet-003 (user-3, team-1) → WON, payout = $142.50\n\nCheck the /bets and /balances endpoints after this to verify settlement."
+          },
+          "response": [
+            {
+              "name": "202 Accepted",
+              "status": "Accepted",
+              "code": 202,
+              "body": "{\n  \"status\": \"accepted\",\n  \"message\": \"Event outcome published to Kafka\",\n  \"eventId\": \"event-1\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Settle event-1 — team-2 wins (Arsenal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/outcome",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "outcome"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"event-1\",\n  \"eventName\": \"Chelsea vs Arsenal\",\n  \"eventWinnerId\": \"team-2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Publishes event-1 outcome with team-2 as winner.\n\nExpected result:\n- bet-001 (user-1, team-1) → LOST\n- bet-002 (user-2, team-2) → WON, payout = $190.00\n- bet-003 (user-3, team-1) → LOST\n\nNote: if bets are already settled from a previous call, you will see 'No pending bets found' in the logs."
+          },
+          "response": []
+        },
+        {
+          "name": "Settle event-2 — Lakers win",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/outcome",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "outcome"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"event-2\",\n  \"eventName\": \"Lakers vs Warriors\",\n  \"eventWinnerId\": \"team-lakers\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Publishes event-2 outcome with Lakers as winner.\n\nExpected result:\n- bet-004 (user-1, team-lakers) → WON, payout = $380.00\n- bet-005 (user-4, team-warriors) → LOST"
+          },
+          "response": []
+        },
+        {
+          "name": "Settle event-2 — Warriors win",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/outcome",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "outcome"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"event-2\",\n  \"eventName\": \"Lakers vs Warriors\",\n  \"eventWinnerId\": \"team-warriors\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Publishes event-2 outcome with Warriors as winner.\n\nExpected result:\n- bet-004 (user-1, team-lakers) → LOST\n- bet-005 (user-4, team-warriors) → WON, payout = $285.00"
+          },
+          "response": []
+        },
+        {
+          "name": "Validation error — missing fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/outcome",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "outcome"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"event-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Intentionally missing eventName and eventWinnerId.\nExpects a 400 Bad Request with validation error messages."
+          },
+          "response": []
+        },
+        {
+          "name": "Unknown event — no bets to settle",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/outcome",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "outcome"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"event-999\",\n  \"eventName\": \"Unknown Match\",\n  \"eventWinnerId\": \"team-x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Publishes an outcome for an event that has no bets in the DB.\nExpects 202 Accepted but logs will show 'No pending bets found for eventId=event-999'."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. View State",
+      "item": [
+        {
+          "name": "Get all bets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/bets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "bets"]
+            },
+            "description": "Returns all bets from the H2 in-memory database.\n\nBefore any settlement: all bets have status PENDING.\nAfter settlement: bets for the settled event will show WON or LOST."
+          },
+          "response": [
+            {
+              "name": "200 OK — before settlement",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": \"bet-001\",\n    \"userId\": \"user-1\",\n    \"eventId\": \"event-1\",\n    \"eventMarketId\": \"market-1\",\n    \"eventWinnerId\": \"team-1\",\n    \"betAmount\": 50.00,\n    \"status\": \"PENDING\"\n  },\n  {\n    \"id\": \"bet-002\",\n    \"userId\": \"user-2\",\n    \"eventId\": \"event-1\",\n    \"eventMarketId\": \"market-1\",\n    \"eventWinnerId\": \"team-2\",\n    \"betAmount\": 100.00,\n    \"status\": \"PENDING\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get user balances",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/balances",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "balances"]
+            },
+            "description": "Returns the current in-memory ledger showing credited winnings per user.\n\nOnly users with winning bets will appear. Users with only losing bets will not have an entry.\n\nExample after settling event-1 with team-1 winner:\n- user-1: 95.00 (bet-001, stake $50 × 1.90)\n- user-3: 142.50 (bet-003, stake $75 × 1.90)"
+          },
+          "response": [
+            {
+              "name": "200 OK — after settling event-1 (team-1 wins)",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"user-1\": 95.00,\n  \"user-3\": 142.50\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
